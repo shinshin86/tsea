@@ -1,8 +1,19 @@
 use std::fs;
-use std::env;
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::path::Path;
+use std::path::PathBuf;
+use clap::Parser;
+
+#[derive(Parser, Debug)]
+struct Opts {
+    /// Directory path
+    #[clap(short = 'd', long = "dir", default_value = ".")]
+    path: String,
+
+    /// Sets the search text
+    search_text: String,
+}
 
 fn format_result(display: &std::path::Display, index:usize, line: &str) -> String {
     // ANSI escape code
@@ -14,22 +25,17 @@ fn format_result(display: &std::path::Display, index:usize, line: &str) -> Strin
 }
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-    if args.len() != 2 {
-        println!("Usage: tsea <search word>");
-        return;
-    }
-
-    let query = &args[1];
-    let current_dir = Path::new(".");
+    let opts = Opts::parse();
+    let path = PathBuf::from(opts.path);
+    let search_text = opts.search_text;
     
-    match fs::read_dir(current_dir) {
+    match fs::read_dir(path.as_path()) {
         Ok(entries) => {
             for entry in entries {
                 if let Ok(entry) = entry {
                     let path = entry.path();
                     if path.extension().map_or(false, |e| e == "txt") {
-                        let results = search_in_file(&path, &query);
+                        let results = search_in_file(&path, &search_text);
                         for line in results {
                             println!("{}", line);
                         }
@@ -84,7 +90,7 @@ mod tests {
         fs::remove_file(&test_file_path).unwrap();
 
         assert_eq!(results.len(), 2);
-        assert!(results.contains(&"temp_test_file.txt (line 2): This is a test".to_string()));
-        assert!(results.contains(&"temp_test_file.txt (line 3): Another test line".to_string()));
+        assert!(results.contains(&"\u{1b}[32mtemp_test_file.txt\u{1b}[0m \u{1b}[33m(line 2)\u{1b}[0m: This is a test".to_string()));
+        assert!(results.contains(&"\u{1b}[32mtemp_test_file.txt\u{1b}[0m \u{1b}[33m(line 3)\u{1b}[0m: Another test line".to_string()));
     }
 }

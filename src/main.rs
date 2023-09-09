@@ -4,6 +4,15 @@ use std::io::prelude::*;
 use std::io::BufReader;
 use std::path::Path;
 
+fn format_result(display: &std::path::Display, index:usize, line: &str) -> String {
+    // ANSI escape code
+    let green_color = "\x1b[32m";
+    let yellow_color = "\x1b[33m";
+    let reset_color = "\x1b[0m";
+
+    format!("{}{}{} {}(line {}){}: {}", green_color, display, reset_color, yellow_color, index + 1, reset_color, line.trim())
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() != 2 {
@@ -48,7 +57,7 @@ fn search_in_file(path: &Path, query: &str) -> Vec<String> {
     for (index, line) in reader.lines().enumerate() {
         let line = line.unwrap();
         if line.contains(query) {
-            results.push(format!("{} (line {}): {}", display, index + 1, line.trim()));
+            results.push(format_result(&display, index, &line));
         }
     }
     results
